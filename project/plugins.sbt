@@ -1,0 +1,5 @@
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.3")
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
+addSbtPlugin("io.github.davidgregory084" % "sbt-tpolecat" % "0.3.1")
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.5.0")
+addSbtPlugin("io.stryker-mutator" % "sbt-stryker4s" % "0.14.3")
