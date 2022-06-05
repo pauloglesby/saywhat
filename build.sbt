@@ -135,6 +135,6 @@ lazy val core = (project in file("core"))
   .settings(baseSettings)
   .settings(
     name := "core",
-    description := "Something",
+    description := "Currently, everything is in the core project",
     libraryDependencies ++= coreDependencies
   )
