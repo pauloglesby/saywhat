@@ -60,11 +60,13 @@ addCommandAlias("preCommit", toCmd(preCommitCmds))
 
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.13.2" cross CrossVersion.full)
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / cancelable := true
+
 lazy val buildSettings = inThisBuild(
   Seq(
     scalaVersion := Versions.scala213.full,
     organization := "ly.analogical",
-    onChangedBuildSource := ReloadOnSourceChanges,
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     bloopExportJarClassifiers := Some(Set("sources")),
@@ -81,15 +83,39 @@ lazy val coverageSettings = Seq(
 
 lazy val lintingSettings = Seq(
   Compile / compile / wartremoverErrors ++= Warts
-    .allBut(Wart.Var, Wart.ImplicitParameter, Wart.DefaultArguments, Wart.Overloading),
+    .allBut(
+      Wart.Any,
+      Wart.DefaultArguments,
+      Wart.ImplicitParameter,
+      Wart.Nothing,
+      Wart.Overloading,
+      Wart.PublicInference, // Let scalafix handle these (ExplicitResultTypes is semantic rule so requires compilation to work first)
+      Wart.Var
+    ),
   scalastyleFailOnWarning := true
 )
 
 lazy val testSettings = Seq(
   testFrameworks += new TestFramework("munit.Framework"),
+  libraryDependencies ++= ammonite,
   Test / javaOptions ++= List("-Xss64m", "-Xmx2048m"),
   Test / fork := true,
-  Test / parallelExecution := true
+  Test / parallelExecution := true,
+  Test / connectInput := true,
+  Test / outputStrategy := Some(StdoutOutput),
+  Test / sourceGenerators += Def.task {
+    val file = (Test / sourceManaged).value / "amm.scala"
+    IO.write(file, """object amm extends App { ammonite.AmmoniteMain.main(args) }""")
+    Seq(file)
+  }.taskValue,
+  (Test / fullClasspath) ++= {
+    (Test / updateClassifiers).value.configurations
+      .find(_.configuration.name == Test.name)
+      .get
+      .modules
+      .flatMap(_.artifacts)
+      .collect { case (a, f) if a.classifier == Some("sources") => f }
+  }
 )
 
 lazy val baseWithoutTestSettings = buildSettings ++ lintingSettings
@@ -98,8 +124,8 @@ lazy val baseSettings = baseWithoutTestSettings ++ coverageSettings ++ testSetti
 lazy val root = (project in file("."))
   .settings(baseSettings)
   .settings(
-    name := "project name here",
-    description := "description here"
+    name := "saywhat",
+    description := "Aggregating tweet streams in real-time for fun & visualisation"
   )
   .aggregate(
     core
